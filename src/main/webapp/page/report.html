@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>报表统计</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link rel="stylesheet" href="https://cdn.bootcss.com/weui/1.1.3/style/weui.min.css">
+  <link rel="stylesheet" href="https://cdn.bootcss.com/jquery-weui/1.2.1/css/jquery-weui.min.css">
+  <link rel="stylesheet" href="../css/weui.css"/>
+  <link rel="stylesheet" href="../css/weuix.css"/>
+
+</head>
+
+<body ontouchstart>
+<div class="page-hd" align="center">
+  <font size="5"><strong>报表统计</strong></font>
+</div>
+
+<div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd">
+      <label class="weui-label">日期：</label>
+    </div>
+    <div class="weui-cell__bd">
+      <input class="weui-input font-input date-input" type="text" data-toggle='date' id="date" placeholder="请选择日期"/>
+    </div>
+  </div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd">
+      <label class="weui-label">学校：</label>
+    </div>
+    <select class="weui-select" id="school">
+      <option value="">全部</option>
+    </select>
+  </div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd">
+      <label class="weui-label">班级：</label>
+    </div>
+    <select class="weui-select" id="grade">
+      <option value="">全部</option>
+    </select>
+  </div>
+  <div class="weui-cell">
+    <div class="weui-cell__hd">
+      <label class="weui-label">宿舍：</label>
+    </div>
+    <select class="weui-select" id="dormitory">
+      <option value="">全部</option>
+    </select>
+  </div>
+  <div class="weui-cell"></div>
+  <div>
+    <a href="javascript:;" class="weui-btn  weui-btn_mini weui-btn_primary" style="margin-left: 3%;"
+       onclick="getTotal()"><i
+      class="icon icon-4"></i>数据查询</a>
+    <a href="javascript:;" class="weui-btn  weui-btn_mini weui-btn_primary" style="margin-left: 35%;"
+       onclick="loadReport()"><i
+      class="icon icon-114"></i>报表下载</a>
+  </div>
+</div>
+<br>
+<div>
+  <table style="font-size: 14px;">
+    <thead>
+    <tr>
+      <th style="text-align: center">学校</th>
+      <th style="text-align: center">总人数</th>
+      <th style="text-align: center">通行次数</th>
+      <th style="text-align: center">实测人数</th>
+      <th style="text-align: center">体温异常</th>
+    </tr>
+    </thead>
+    <tbody id="tableData" style="text-align:center;">
+    </tbody>
+  </table>
+</div>
+
+
+<script src="http://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+<script src="https://cdn.bootcss.com/jquery/1.11.0/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery-weui/1.2.1/js/jquery-weui.min.js"></script>
+<script src="https://cdn.bootcss.com/fastclick/1.0.6/fastclick.js"></script>
+
+<script>
+  const BaseUrl = "http://7ebbqh.natappfree.cc/";
+
+  $(function () {
+    initDate();
+    $.ajax({
+      type: 'POST',
+      contentType: "application/x-www-form-urlencoded",
+      url: "report/schoolList",
+      success: function (result) {
+        console.log(result)
+        if (result.success) {
+          $("#school option").remove();
+          var data = result.msg;
+          var html = '<option value="">全部</option>';
+          for (var i in data) {
+            html += '<option value="' + data[i].schoolName + '">' + data[i].schoolName + '</option>'
+          }
+          $("#school").append(html); //渲染
+        }
+      }
+    });
+
+  });
+
+  $("#date").calendar();
+
+
+  $("#school").bind("change", function () {
+      var school = $("#school").val();
+      $("#grade option").remove();
+      $("#dormitory option").remove();
+      var html = '<option value="">全部</option>';
+      $("#grade").append(html); //渲染
+      $("#dormitory").append(html); //渲染
+    if(school != '') {
+
+      $.ajax({
+        type: 'POST',
+        contentType: "application/x-www-form-urlencoded",
+        url: "report/gradeList",
+        data: {
+          school: school
+        },
+        success: function (result) {
+          if(result.success){
+            console.log(result)
+            $("#grade option").remove();
+            var data = result.msg;
+            var html = '<option value="">全部</option>';
+            for (var i in data) {
+              html += '<option value="' + data[i].groupName + '">' + data[i].groupName + '</option>'
+            }
+            $("#grade").append(html); //渲染
+          }
+
+        }
+      });
+      $.ajax({
+        type: 'POST',
+        contentType: "application/x-www-form-urlencoded",
+        url: "report/dormitoryList",
+        data: {
+          school: school
+        },
+        success: function (result) {
+          if(result.success) {
+            console.log(result)
+            $("#dormitory option").remove();
+            var data = result.msg;
+            var html = '<option value="">全部</option>';
+            for (var i in data) {
+              html += '<option value="' + data[i].dormitory + '">' + data[i].dormitory + '</option>'
+            }
+            $("#dormitory").append(html); //渲染
+          }
+        }
+      });
+    }
+
+  });
+
+
+  function getTotal() {
+    $.ajax({
+      type: 'POST',
+      contentType: "application/x-www-form-urlencoded",
+      url: "report/total",
+      data: {
+        date: $("#date").val(),
+        school: $("#school").val(),
+        grade: $("#grade").val(),
+        dormitory: $("#dormitory").val(),
+      },
+      success: function (result) {
+        if (result.success) {
+          $("#tableData").empty();
+          for (var i in result.msg) {
+            $("#tableData").append("<tr>\n" +
+              "      <td style='text-align: center'>" + result.msg[i].school + "</td>\n" +
+              "      <td style='text-align: center'>" + result.msg[i].schoolStudentNum + "</td>\n" +
+              "      <td style='text-align: center'>" + result.msg[i].accessCount + "</td>\n" +
+              "      <td style='text-align: center'>" + result.msg[i].realAccessCount + "</td>\n" +
+              "      <td style='text-align: center'>" + result.msg[i].abnormalCount + "</td>\n" +
+              "    </tr>")
+          }
+        } else {
+
+        }
+      }
+    });
+  };
+
+  function loadReport() {
+    var school = $("#school").val();
+    var date = $("#date").val();
+    var dormitory = $("#dormitory").val();
+    var grade = $("#grade").val();
+
+    var params = "?school=" + school + "&date=" + date + "&dormitory=" + dormitory + "&grade=" + grade;
+    window.location.href = BaseUrl + "report/loadReport" + params;
+  }
+
+  function initDate() {
+    var date = new Date();
+    var month = (date.getUTCMonth()+1)+"";
+    var day = date.getDate()+"";
+    if((date.getUTCMonth()+1)<10){
+      month = "0"+(date.getUTCMonth()+1);
+    }
+    if(date.getDate()<10){
+      day = date.getDate();
+    }
+    var nowDate = date.getUTCFullYear() +"/"+month+"/"+day;
+    $("#date").val(nowDate);
+  }
+
+</script>
+</body>
+
+
+</html>
